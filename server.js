@@ -49,17 +49,17 @@ app.get("/selling-passes", async (req, res) => {
   返り値は [{ id, name, price, imageUrl }] にそろえる
 */
 async function fetchSellingPassesForUser(userId) {
-  // ============================
-  // いったんダミーではなく「本番用の差し替え地点」
-  // ここにあなたが使う外部列挙元を入れる
-  // ============================
+  // テスト用: 特定の userId にだけ仮データを返す
+  if (userId === 409257801) {
+    return [
+      { id: 1001, name: "Donate 5", price: 5, imageUrl: "" },
+      { id: 1002, name: "Donate 10", price: 10, imageUrl: "" },
+      { id: 1003, name: "Donate 50", price: 50, imageUrl: "" },
+      { id: 1004, name: "Donate 100", price: 100, imageUrl: "" },
+    ];
+  }
 
-  // 例:
-  // const res = await fetch("https://YOUR-ENUMERATOR.example.com/selling-passes?userId=" + userId);
-  // const raw = await res.json();
-  // return normalizeSellingPasses(raw);
-
-  throw new Error("fetchSellingPassesForUser() を本番列挙元に差し替えてください");
+  return [];
 }
 
 function normalizeSellingPasses(raw) {
