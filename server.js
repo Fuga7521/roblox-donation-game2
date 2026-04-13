@@ -29,7 +29,7 @@ const DEBUG = process.env.DEBUG === "true";
 
 // テスト用固定レスポンスモード
 // true にすると外部列挙元を使わず固定データを返す
-const USE_TEST_DATA = process.env.USE_TEST_DATA === "true";
+const USE_TEST_DATA = process.env.USE_TEST_DATA === "false";
 
 // 特定ユーザーだけテスト返却したい場合
 const TEST_USER_ID = Number(process.env.TEST_USER_ID || 409257801);
