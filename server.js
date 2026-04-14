@@ -4,16 +4,9 @@ const cors = require("cors");
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
-// キャッシュ時間
 const CACHE_TTL_MS = Number(process.env.CACHE_TTL_MS || 60_000);
-
-// タイムアウト
 const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 10_000);
-
-// デバッグ
 const DEBUG = process.env.DEBUG === "true";
-
-// テストフォールバック
 const USE_TEST_DATA = process.env.USE_TEST_DATA === "true";
 const TEST_USER_ID = Number(process.env.TEST_USER_ID || 409257801);
 
@@ -101,10 +94,11 @@ function getTestItems(userId) {
   }
 
   return [
-    { id: 1001, name: "Donate 5", price: 5, imageUrl: "" },
-    { id: 1002, name: "Donate 10", price: 10, imageUrl: "" },
-    { id: 1003, name: "Donate 50", price: 50, imageUrl: "" },
-    { id: 1004, name: "Donate 100", price: 100, imageUrl: "" },
+    { id: 1781238388, name: "idk", price: 1, imageUrl: "" },
+    { id: 934747245, name: "kami", price: 2, imageUrl: "" },
+    { id: 769188580, name: "Nice donate", price: 2, imageUrl: "" },
+    { id: 875912481, name: "pls back tix;(", price: 3, imageUrl: "" },
+    { id: 1503075197, name: "donate", price: 5, imageUrl: "" }
   ];
 }
 
@@ -114,11 +108,10 @@ async function fetchUserGames(userId) {
   )}/games?accessFilter=Public&limit=50&sortOrder=Asc`;
 
   const raw = await fetchJson(url);
-
-  // games API は data 配列を返す
   const data = Array.isArray(raw?.data) ? raw.data : [];
 
   const universes = [];
+  const seen = new Set();
 
   for (const game of data) {
     const universeId =
@@ -126,12 +119,31 @@ async function fetchUserGames(userId) {
       toNumber(game.universeId) ??
       toNumber(game.rootPlace?.universeId);
 
-    if (universeId) {
+    if (universeId && !seen.has(universeId)) {
+      seen.add(universeId);
       universes.push(universeId);
     }
   }
 
   return universes;
+}
+
+async function fetchThumbnailUrlForPass(passId) {
+  const url = `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${encodeURIComponent(
+    passId
+  )}&size=150x150&format=Png&isCircular=false`;
+
+  try {
+    const raw = await fetchJson(url);
+    const data = Array.isArray(raw?.data) ? raw.data : [];
+    if (data[0] && typeof data[0].imageUrl === "string") {
+      return data[0].imageUrl;
+    }
+  } catch (e) {
+    logDebug("thumbnail fetch failed", passId, String(e));
+  }
+
+  return "";
 }
 
 async function fetchGamePassesForUniverse(universeId) {
@@ -172,12 +184,6 @@ async function fetchGamePassesForUniverse(universeId) {
       toNumber(item.cost) ??
       0;
 
-    const imageUrl =
-      safeString(item.imageUrl) ||
-      safeString(item.thumbnailUrl) ||
-      safeString(item.icon) ||
-      "";
-
     if (!id || price <= 0) {
       continue;
     }
@@ -187,6 +193,8 @@ async function fetchGamePassesForUniverse(universeId) {
     }
 
     seen.add(id);
+
+    const imageUrl = await fetchThumbnailUrlForPass(id);
 
     items.push({
       id,
@@ -205,7 +213,7 @@ async function fetchSellingPassesForUser(userId) {
   }
 
   const universes = await fetchUserGames(userId);
-  logDebug("universes for user", userId, universes);
+  logDebug("universes", userId, universes);
 
   if (universes.length === 0) {
     return [];
@@ -225,7 +233,7 @@ async function fetchSellingPassesForUser(userId) {
         }
       }
     } catch (err) {
-      logDebug("failed universe", universeId, String(err));
+      logDebug("universe failed", universeId, String(err));
     }
   }
 
